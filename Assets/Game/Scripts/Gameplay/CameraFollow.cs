@@ -3,7 +3,7 @@ using UnityEngine;
 namespace DustOfWar.Gameplay
 {
     /// <summary>
-    /// Camera follow system for 2D top-down view
+    /// Camera follow system for 2D horizontal side-scrolling game
     /// Smoothly follows the player with configurable offset and smoothing
     /// </summary>
     public class CameraFollow : MonoBehaviour

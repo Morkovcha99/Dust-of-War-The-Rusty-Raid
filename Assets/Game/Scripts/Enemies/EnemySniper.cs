@@ -141,8 +141,8 @@ namespace DustOfWar.Enemies
             currentVelocity = Vector2.Lerp(currentVelocity, targetVelocity, 3f * Time.deltaTime);
             rb.linearVelocity = currentVelocity;
 
-            // Rotate towards player
-            float targetAngle = Mathf.Atan2(directionToPlayer.y, directionToPlayer.x) * Mathf.Rad2Deg;
+            // Rotate towards player (sprite faces up by default, so -90 offset)
+            float targetAngle = Mathf.Atan2(directionToPlayer.y, directionToPlayer.x) * Mathf.Rad2Deg - 90f;
             float currentAngle = transform.eulerAngles.z;
             float angle = Mathf.LerpAngle(currentAngle, targetAngle, rotationSpeed * Time.deltaTime);
             transform.rotation = Quaternion.Euler(0, 0, angle);
@@ -153,9 +153,9 @@ namespace DustOfWar.Enemies
             // Stop moving
             rb.linearVelocity = Vector2.zero;
 
-            // Rotate towards player
+            // Rotate towards player (sprite faces up by default, so -90 offset)
             Vector2 directionToPlayer = (playerTarget.position - transform.position).normalized;
-            float targetAngle = Mathf.Atan2(directionToPlayer.y, directionToPlayer.x) * Mathf.Rad2Deg;
+            float targetAngle = Mathf.Atan2(directionToPlayer.y, directionToPlayer.x) * Mathf.Rad2Deg - 90f;
             float currentAngle = transform.eulerAngles.z;
             float angle = Mathf.LerpAngle(currentAngle, targetAngle, rotationSpeed * Time.deltaTime);
             transform.rotation = Quaternion.Euler(0, 0, angle);
@@ -240,15 +240,15 @@ namespace DustOfWar.Enemies
             currentVelocity = Vector2.Lerp(currentVelocity, targetVelocity, 5f * Time.deltaTime);
             rb.linearVelocity = currentVelocity;
 
-            // Rotate away from player
-            float targetAngle = Mathf.Atan2(directionAwayFromPlayer.y, directionAwayFromPlayer.x) * Mathf.Rad2Deg;
+            // Rotate away from player (sprite faces up by default, so -90 offset)
+            float targetAngle = Mathf.Atan2(directionAwayFromPlayer.y, directionAwayFromPlayer.x) * Mathf.Rad2Deg - 90f;
             float currentAngle = transform.eulerAngles.z;
             float angle = Mathf.LerpAngle(currentAngle, targetAngle, rotationSpeed * Time.deltaTime);
             transform.rotation = Quaternion.Euler(0, 0, angle);
 
-            // After retreating, go back to moving
+            // After retreating enough distance, go back to moving
             float distanceToPlayer = Vector2.Distance(transform.position, playerTarget.position);
-            if (distanceToPlayer >= attackRange)
+            if (distanceToPlayer >= attackRange || distanceToPlayer >= retreatDistance + minRange)
             {
                 currentState = SniperState.Moving;
             }
