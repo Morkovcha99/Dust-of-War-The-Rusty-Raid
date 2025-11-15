@@ -187,7 +187,7 @@ public class HangarManager : MonoBehaviour
     // --- Загрузка и отображение выбранной машинки ---
 
     // Загружает данные и спрайт для выбранной машины по индексу
-    void LoadCar(int index)
+    public void LoadCar(int index)
     {
         // Проверка на валидность индекса
         if (index < 0 || index >= availableCarsConfig.Length)
@@ -215,6 +215,11 @@ public class HangarManager : MonoBehaviour
             Debug.LogError($"Sprite not found for car index {currentCarSpriteIndex}. Ensure the sprite is assigned and the index is correct.");
             carDisplaySpriteRenderer.sprite = null; // Скрываем, если спрайта нет
         }
+        if (carDisplaySpriteRenderer == null)
+        {
+            Debug.LogError("Car Display Sprite Renderer is null or destroyed! Cannot load car.");
+            return; // Прерываем выполнение функции, если рендерер уничтожен
+        }
 
         // Сбрасываем уровни прокачки для новой машины
         selectedCarConfig.ResetLevels();
@@ -223,6 +228,48 @@ public class HangarManager : MonoBehaviour
         UpdateUpgradeButtonsInteractable(); // Обновляем доступность кнопок прокачки
     }
 
+    // Метод-обертка для вызова LoadCar() с проверкой
+    public void SelectCarByIndex(int index)
+    {
+        // Проверяем, существует ли еще SpriteRenderer
+        if (carDisplaySpriteRenderer != null)
+        {
+            LoadCar(index); // Вызываем основную логику загрузки
+        }
+        else
+        {
+            Debug.LogError("Car Display Sprite Renderer is null or destroyed! Cannot load car.");
+            // Можно попробовать переинициализировать HangarManager или сцену,
+            // или просто сообщить об ошибке, если повторная загрузка невозможна.
+        }
+    }
+    // Метод для перехода к следующей машинке
+    public void NextCar()
+    {
+        // Переходим к следующему индексу, если достигли конца - возвращаемся к первому
+        currentCarConfigIndex = (currentCarConfigIndex + 1) % availableCarsConfig.Length;
+        // Важно: индекс спрайта тоже должен соответствовать
+        currentCarSpriteIndex = currentCarConfigIndex;
+        LoadCar(currentCarConfigIndex);
+        UpdateUI();
+        UpdateUpgradeButtonsInteractable();
+    }
+
+    // Метод для перехода к предыдущей машинке
+    public void PreviousCar()
+    {
+        // Переходим к предыдущему индексу, если достигли начала - возвращаемся к последнему
+        currentCarConfigIndex--;
+        if (currentCarConfigIndex < 0)
+        {
+            currentCarConfigIndex = availableCarsConfig.Length - 1;
+        }
+        // Важно: индекс спрайта тоже должен соответствовать
+        currentCarSpriteIndex = currentCarConfigIndex;
+        LoadCar(currentCarConfigIndex);
+        UpdateUI();
+        UpdateUpgradeButtonsInteractable();
+    }
     // --- Управление UI ---
 
     // Создает кнопки выбора машинок в Scroll View
@@ -257,7 +304,7 @@ public class HangarManager : MonoBehaviour
             }
 
             // Добавляем слушатель события нажатия на кнопку
-            button.onClick.AddListener(() => OnCarSelectButtonClick(carIndex));
+            button.onClick.AddListener(() => SelectCarByIndex(carIndex));
         }
     }
 
