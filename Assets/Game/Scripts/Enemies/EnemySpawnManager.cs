@@ -228,43 +228,56 @@ namespace DustOfWar.Enemies
 
             if (spawnAtEdge)
             {
-                // Spawn at screen edge
+                // Spawn at screen edge (horizontal game - prefer left/right edges)
                 Camera cam = Camera.main;
                 if (cam != null)
                 {
                     float screenHeight = cam.orthographicSize * 2f;
                     float screenWidth = screenHeight * cam.aspect;
                     
-                    int edge = Random.Range(0, 4);
+                    // For horizontal game, prefer spawning from left/right (70% chance)
+                    int edge;
+                    if (Random.value < 0.7f)
+                    {
+                        // Left or Right
+                        edge = Random.Range(1, 3); // 1 = Right, 2 = Left (will be handled as default)
+                        if (edge == 2) edge = 3; // Map to Left
+                    }
+                    else
+                    {
+                        // Top or Bottom (less common in horizontal game)
+                        edge = Random.value < 0.5f ? 0 : 2; // 0 = Top, 2 = Bottom
+                    }
+                    
                     float distance = Random.Range(enemyData.spawnDistanceMin, enemyData.spawnDistanceMax);
                     
                     switch (edge)
                     {
-                        case 0: // Top
+                        case 0: // Top (less common)
                             spawnPos = playerPos + new Vector3(
-                                Random.Range(-screenWidth * 0.4f, screenWidth * 0.4f),
+                                Random.Range(-screenWidth * 0.3f, screenWidth * 0.3f),
                                 screenHeight * 0.5f + distance,
                                 0f
                             );
                             break;
-                        case 1: // Right
+                        case 1: // Right (common)
                             spawnPos = playerPos + new Vector3(
                                 screenWidth * 0.5f + distance,
-                                Random.Range(-screenHeight * 0.4f, screenHeight * 0.4f),
+                                Random.Range(-screenHeight * 0.3f, screenHeight * 0.3f),
                                 0f
                             );
                             break;
-                        case 2: // Bottom
+                        case 2: // Bottom (less common)
                             spawnPos = playerPos + new Vector3(
-                                Random.Range(-screenWidth * 0.4f, screenWidth * 0.4f),
+                                Random.Range(-screenWidth * 0.3f, screenWidth * 0.3f),
                                 -screenHeight * 0.5f - distance,
                                 0f
                             );
                             break;
-                        default: // Left
+                        default: // Left (common)
                             spawnPos = playerPos + new Vector3(
                                 -screenWidth * 0.5f - distance,
-                                Random.Range(-screenHeight * 0.4f, screenHeight * 0.4f),
+                                Random.Range(-screenHeight * 0.3f, screenHeight * 0.3f),
                                 0f
                             );
                             break;
@@ -277,13 +290,13 @@ namespace DustOfWar.Enemies
             }
             else if (spawnBehindPlayer)
             {
-                // Spawn behind player
+                // Spawn behind player (for horizontal game, usually left side)
                 Vector2 playerDirection = playerTarget.right;
-                float angle = Mathf.Atan2(playerDirection.y, playerDirection.x) + Mathf.PI;
+                float angle = Mathf.Atan2(playerDirection.y, playerDirection.x) + Mathf.PI; // Behind player
                 float distance = Random.Range(enemyData.spawnDistanceMin, enemyData.spawnDistanceMax);
                 spawnPos = playerPos + new Vector3(
                     Mathf.Cos(angle) * distance,
-                    Mathf.Sin(angle) * distance,
+                    Mathf.Sin(angle) * distance + Random.Range(-2f, 2f), // Add some vertical variation
                     0f
                 );
             }

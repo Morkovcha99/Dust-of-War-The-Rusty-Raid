@@ -243,6 +243,62 @@ namespace DustOfWar.Player
             return new List<Transform>(enemiesInRange);
         }
 
+        /// <summary>
+        /// Get current fire rate
+        /// </summary>
+        public float GetFireRate()
+        {
+            return fireRate;
+        }
+
+        /// <summary>
+        /// Get current projectile damage
+        /// </summary>
+        public float GetProjectileDamage()
+        {
+            return projectileDamage;
+        }
+
+        /// <summary>
+        /// Get current projectile speed
+        /// </summary>
+        public float GetProjectileSpeed()
+        {
+            return projectileSpeed;
+        }
+
+        /// <summary>
+        /// Get current projectile prefab
+        /// </summary>
+        public GameObject GetProjectilePrefab()
+        {
+            return projectilePrefab;
+        }
+
+        /// <summary>
+        /// Set projectile prefab
+        /// </summary>
+        public void SetProjectilePrefab(GameObject prefab)
+        {
+            projectilePrefab = prefab;
+        }
+
+        /// <summary>
+        /// Set projectile damage
+        /// </summary>
+        public void SetProjectileDamage(float damage)
+        {
+            projectileDamage = Mathf.Max(1f, damage);
+        }
+
+        /// <summary>
+        /// Set projectile speed
+        /// </summary>
+        public void SetProjectileSpeed(float speed)
+        {
+            projectileSpeed = Mathf.Max(1f, speed);
+        }
+
         private void OnDrawGizmosSelected()
         {
             // Draw weapon range

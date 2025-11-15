@@ -27,6 +27,7 @@ namespace DustOfWar.Player
         private float armorBonus = 0f;
         private bool isInvulnerable = false;
         private float invulnerabilityTimer = 0f;
+        private float shieldHealth = 0f; // Temporary shield
 
         // Events
         public System.Action<float, float> OnHealthChanged; // currentHealth, maxHealth
@@ -72,8 +73,25 @@ namespace DustOfWar.Player
             float totalArmor = armor + armorBonus;
             float actualDamage = Mathf.Max(1f, damage - totalArmor);
             
-            currentHealth -= actualDamage;
-            currentHealth = Mathf.Max(0f, currentHealth);
+            // Shield absorbs damage first
+            if (shieldHealth > 0f)
+            {
+                float shieldAbsorbed = Mathf.Min(shieldHealth, actualDamage);
+                shieldHealth -= shieldAbsorbed;
+                actualDamage -= shieldAbsorbed;
+                
+                if (shieldHealth <= 0f)
+                {
+                    shieldHealth = 0f;
+                }
+            }
+            
+            // Apply remaining damage to health
+            if (actualDamage > 0f)
+            {
+                currentHealth -= actualDamage;
+                currentHealth = Mathf.Max(0f, currentHealth);
+            }
 
             OnDamageTaken?.Invoke(actualDamage);
             OnHealthChanged?.Invoke(currentHealth, maxHealth);
@@ -190,6 +208,22 @@ namespace DustOfWar.Player
         }
 
         /// <summary>
+        /// Set shield health (for temporary shield upgrade)
+        /// </summary>
+        public void SetShieldHealth(float shield)
+        {
+            shieldHealth = Mathf.Max(0f, shield);
+        }
+
+        /// <summary>
+        /// Get current shield health
+        /// </summary>
+        public float GetShieldHealth()
+        {
+            return shieldHealth;
+        }
+
+        /// <summary>
         /// Reset vehicle to full health (for restart/respawn)
         /// </summary>
         public void ResetVehicle()
@@ -197,6 +231,7 @@ namespace DustOfWar.Player
             currentHealth = maxHealth;
             isInvulnerable = false;
             invulnerabilityTimer = 0f;
+            shieldHealth = 0f;
             OnHealthChanged?.Invoke(currentHealth, maxHealth);
         }
     }

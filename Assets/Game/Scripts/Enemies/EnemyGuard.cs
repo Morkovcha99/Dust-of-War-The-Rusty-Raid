@@ -74,9 +74,9 @@ namespace DustOfWar.Enemies
                 currentVelocity = Vector2.Lerp(currentVelocity, Vector2.zero, 5f * Time.deltaTime);
                 rb.linearVelocity = currentVelocity;
 
-                // Rotate towards player
+                // Rotate towards player (sprite faces up by default, so -90 offset)
                 Vector2 directionToPlayer = (playerTarget.position - transform.position).normalized;
-                float targetAngle = Mathf.Atan2(directionToPlayer.y, directionToPlayer.x) * Mathf.Rad2Deg;
+                float targetAngle = Mathf.Atan2(directionToPlayer.y, directionToPlayer.x) * Mathf.Rad2Deg - 90f;
                 float currentAngle = transform.eulerAngles.z;
                 float angle = Mathf.LerpAngle(currentAngle, targetAngle, rotationSpeed * Time.deltaTime);
                 transform.rotation = Quaternion.Euler(0, 0, angle);
@@ -117,10 +117,10 @@ namespace DustOfWar.Enemies
             currentVelocity = Vector2.Lerp(currentVelocity, targetVelocity, 3f * Time.deltaTime);
             rb.linearVelocity = currentVelocity;
 
-            // Rotate towards movement direction
+            // Rotate towards movement direction (sprite faces up by default, so -90 offset)
             if (currentVelocity.magnitude > 0.1f)
             {
-                float targetAngle = Mathf.Atan2(currentVelocity.y, currentVelocity.x) * Mathf.Rad2Deg;
+                float targetAngle = Mathf.Atan2(currentVelocity.y, currentVelocity.x) * Mathf.Rad2Deg - 90f;
                 float currentAngle = transform.eulerAngles.z;
                 float angle = Mathf.LerpAngle(currentAngle, targetAngle, rotationSpeed * Time.deltaTime);
                 transform.rotation = Quaternion.Euler(0, 0, angle);
