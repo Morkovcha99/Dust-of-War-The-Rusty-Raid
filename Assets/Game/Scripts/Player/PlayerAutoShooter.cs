@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using DustOfWar.Combat;
+using DustOfWar.Enemies;
 
 namespace DustOfWar.Player
 {
@@ -49,6 +50,11 @@ namespace DustOfWar.Player
             playerController = GetComponent<PlayerController>();
             playerVehicle = GetComponent<PlayerVehicle>();
 
+            if (playerVehicle == null)
+            {
+                Debug.LogWarning("PlayerAutoShooter: PlayerVehicle component not found!");
+            }
+
             // Set default fire point if none assigned
             if (firePoints == null || firePoints.Length == 0)
             {
@@ -61,6 +67,15 @@ namespace DustOfWar.Player
             {
                 // Fallback: use tag-based detection
                 enemyLayer = ~0; // All layers
+                Debug.LogWarning("PlayerAutoShooter: Enemy layer not found, using all layers with tag detection");
+            }
+        }
+
+        private void Start()
+        {
+            if (projectilePrefab == null)
+            {
+                Debug.LogError("PlayerAutoShooter: Projectile Prefab is not assigned! Player will not be able to shoot.");
             }
         }
 
@@ -75,6 +90,7 @@ namespace DustOfWar.Player
         private void FindNearestTarget()
         {
             enemiesInRange.Clear();
+            Transform previousTarget = currentTarget;
             currentTarget = null;
 
             float nearestDistance = float.MaxValue;
@@ -86,6 +102,13 @@ namespace DustOfWar.Player
             {
                 // Check if it's actually an enemy (tag-based fallback)
                 if (!collider.CompareTag("Enemy") && enemyLayer.value != ~0)
+                {
+                    continue;
+                }
+
+                // Also check if it has Enemy component
+                Enemy enemyComponent = collider.GetComponent<Enemy>();
+                if (enemyComponent == null || !enemyComponent.IsAlive())
                 {
                     continue;
                 }
@@ -115,11 +138,11 @@ namespace DustOfWar.Player
             }
 
             // Notify target changes
-            if (currentTarget != null)
+            if (currentTarget != null && currentTarget != previousTarget)
             {
                 OnTargetAcquired?.Invoke(currentTarget);
             }
-            else
+            else if (currentTarget == null && previousTarget != null)
             {
                 OnTargetLost?.Invoke();
             }
@@ -141,7 +164,16 @@ namespace DustOfWar.Player
 
         private void FireAtTarget()
         {
-            if (currentTarget == null || projectilePrefab == null) return;
+            if (currentTarget == null)
+            {
+                return;
+            }
+
+            if (projectilePrefab == null)
+            {
+                Debug.LogWarning("PlayerAutoShooter: Cannot fire - Projectile Prefab is not assigned!");
+                return;
+            }
 
             Vector2 directionToTarget = (currentTarget.position - transform.position).normalized;
 
@@ -177,7 +209,8 @@ namespace DustOfWar.Player
             Projectile projectile = projectileObj.GetComponent<Projectile>();
             if (projectile != null)
             {
-                float finalDamage = projectileDamage * playerVehicle.GetDamageMultiplier();
+                float damageMultiplier = playerVehicle != null ? playerVehicle.GetDamageMultiplier() : 1f;
+                float finalDamage = projectileDamage * damageMultiplier;
                 projectile.Initialize(direction * projectileSpeed, finalDamage, projectileLifetime);
             }
             else

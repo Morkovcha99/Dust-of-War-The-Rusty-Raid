@@ -15,7 +15,9 @@ namespace DustOfWar.Enemies
         [SerializeField] private float acceleration = 12f; // Reduced acceleration
         [SerializeField] private float rotationSpeed = 300f; // Slightly slower rotation
         [SerializeField] private float ramDamage = 10f; // Reduced damage
-        [SerializeField] private float bounceForce = 2.5f;
+        [SerializeField] private float bounceForce = 4f; // Increased bounce force
+        [SerializeField] private float retreatSpeed = 5f; // Speed when retreating from player
+        [SerializeField] private float retreatDuration = 1.5f; // How long to retreat
         [SerializeField] private float bounceCooldown = 0.8f; // Longer cooldown
 
         [Header("Visual")]
@@ -77,18 +79,38 @@ namespace DustOfWar.Enemies
 
         private void ChargeAtPlayer()
         {
-            if (playerTarget == null || isBouncing) return;
+            if (playerTarget == null) return;
 
-            Vector2 directionToPlayer = (playerTarget.position - transform.position).normalized;
-            
-            // Accelerate towards player
-            Vector2 targetVelocity = directionToPlayer * chargeSpeed;
-            currentVelocity = Vector2.Lerp(currentVelocity, targetVelocity, acceleration * Time.deltaTime);
-            rb.linearVelocity = currentVelocity;
-
-            // Rotate towards player (sprite faces up by default, so -90 offset)
-            float targetAngle = Mathf.Atan2(directionToPlayer.y, directionToPlayer.x) * Mathf.Rad2Deg - 90f;
             float currentAngle = transform.eulerAngles.z;
+            float targetAngle;
+            Vector2 direction;
+
+            if (isBouncing)
+            {
+                // Retreat away from player
+                direction = (transform.position - playerTarget.position).normalized;
+                Vector2 retreatVelocity = direction * retreatSpeed;
+                currentVelocity = Vector2.Lerp(currentVelocity, retreatVelocity, acceleration * Time.deltaTime);
+                rb.linearVelocity = currentVelocity;
+
+                // Rotate away from player (sprite faces up by default, so -90 offset)
+                targetAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg - 90f;
+            }
+            else
+            {
+                // Charge towards player
+                direction = (playerTarget.position - transform.position).normalized;
+                
+                // Accelerate towards player
+                Vector2 targetVelocity = direction * chargeSpeed;
+                currentVelocity = Vector2.Lerp(currentVelocity, targetVelocity, acceleration * Time.deltaTime);
+                rb.linearVelocity = currentVelocity;
+
+                // Rotate towards player (sprite faces up by default, so -90 offset)
+                targetAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg - 90f;
+            }
+
+            // Apply rotation
             float angle = Mathf.LerpAngle(currentAngle, targetAngle, rotationSpeed * Time.deltaTime);
             transform.rotation = Quaternion.Euler(0, 0, angle);
         }
@@ -115,15 +137,15 @@ namespace DustOfWar.Enemies
                     playerVehicle.TakeDamage(ramDamage);
                 }
 
-                // Bounce away
+                // Start retreating away from player
                 Vector2 bounceDirection = (transform.position - collision.transform.position).normalized;
                 rb.linearVelocity = bounceDirection * bounceForce;
                 
                 isBouncing = true;
                 lastRamTime = Time.time;
 
-                // Stop bouncing after short time
-                Invoke(nameof(StopBouncing), 0.3f);
+                // Stop retreating after duration
+                Invoke(nameof(StopBouncing), retreatDuration);
             }
             else if (collision.gameObject.CompareTag("Enemy"))
             {

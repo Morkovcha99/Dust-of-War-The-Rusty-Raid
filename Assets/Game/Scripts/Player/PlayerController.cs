@@ -66,15 +66,30 @@ namespace DustOfWar.Player
             // Subscribe to touch events
             if (enableTouchInput)
             {
-                InputSystem.onDeviceChange += OnDeviceChange;
+                try
+                {
+                    UnityEngine.InputSystem.InputSystem.onDeviceChange += OnDeviceChange;
+                }
+                catch (System.Exception)
+                {
+                    // Input System may not be available in some contexts
+                }
             }
         }
 
         private void OnDisable()
         {
+            // Unsubscribe from touch events safely
             if (enableTouchInput)
             {
-                InputSystem.onDeviceChange -= OnDeviceChange;
+                try
+                {
+                    UnityEngine.InputSystem.InputSystem.onDeviceChange -= OnDeviceChange;
+                }
+                catch (System.Exception)
+                {
+                    // Input System may not be available in some contexts
+                }
             }
         }
 
