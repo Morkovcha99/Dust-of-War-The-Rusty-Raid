@@ -4,8 +4,8 @@ using System.Collections.Generic;
 namespace DustOfWar.Gameplay
 {
     /// <summary>
-    /// Spawns obstacles (explosive barrels and rocks) on the map
-    /// Obstacles are rare and randomly placed
+    /// Spawns obstacles (explosive barrels and rocks) on a static map
+    /// Obstacles are rare and randomly placed across the entire map
     /// </summary>
     public class ObstacleSpawner : MonoBehaviour
     {
@@ -14,73 +14,76 @@ namespace DustOfWar.Gameplay
         [SerializeField] private GameObject rockPrefab;
         
         [Header("Spawn Settings")]
-        [SerializeField] private float spawnChancePerTile = 0.02f; // 2% chance per tile
+        [SerializeField] private int totalObstacles = 50; // Total number of obstacles to spawn
         [SerializeField] private float barrelChance = 0.3f; // 30% of obstacles are barrels
         [SerializeField] private float rockChance = 0.7f; // 70% are rocks
         [SerializeField] private float minDistanceBetweenObstacles = 3f;
-        [SerializeField] private int tilesAhead = 15;
-        [SerializeField] private int tilesBehind = 5;
+        [SerializeField] private int maxAttemptsPerObstacle = 50; // Max attempts to find valid position
         [SerializeField] private Vector2 tileSize = new Vector2(2f, 2f);
+        
+        [Header("Map Settings")]
+        [SerializeField] private TileGenerator tileGenerator; // Reference to tile generator
+        [SerializeField] private int tilesHorizontal = 100;
+        [SerializeField] private int tilesVertical = 10;
+        [SerializeField] private Vector2 mapStartPosition = Vector2.zero;
         
         [Header("Spawn Area")]
         [SerializeField] private float spawnYMin = -4f;
         [SerializeField] private float spawnYMax = 4f;
 
-        private Transform followTarget;
         private List<Vector2> spawnedObstaclePositions = new List<Vector2>();
-        private Vector2Int lastSpawnedTile = new Vector2Int(int.MinValue, 0);
-        private float cleanupDistance = 20f;
+        private List<GameObject> spawnedObstacles = new List<GameObject>();
 
         private void Start()
         {
-            GameObject player = GameObject.FindGameObjectWithTag("Player");
-            if (player != null)
+            // Get map settings from TileGenerator if available
+            if (tileGenerator != null)
             {
-                followTarget = player.transform;
+                Bounds mapBounds = tileGenerator.GetMapBounds();
+                Vector2 actualTileSize = tileGenerator.GetTileSize();
+                tilesHorizontal = Mathf.RoundToInt(mapBounds.size.x / actualTileSize.x);
+                tilesVertical = Mathf.RoundToInt(mapBounds.size.y / actualTileSize.y);
+                mapStartPosition = mapBounds.min;
+                tileSize = actualTileSize; // Sync tile size
             }
+
+            GenerateObstacles();
         }
 
-        private void Update()
+        private void GenerateObstacles()
         {
-            if (followTarget == null) return;
+            // Calculate map bounds
+            float mapWidth = tilesHorizontal * tileSize.x;
+            float mapHeight = tilesVertical * tileSize.y;
+            float mapXMin = mapStartPosition.x;
+            float mapXMax = mapStartPosition.x + mapWidth;
+            float mapYMin = Mathf.Max(mapStartPosition.y, spawnYMin);
+            float mapYMax = Mathf.Min(mapStartPosition.y + mapHeight, spawnYMax);
 
-            Vector2Int currentTile = WorldToTile(followTarget.position);
-            
-            // Spawn obstacles in new tiles
-            for (int x = lastSpawnedTile.x; x <= currentTile.x + tilesAhead; x++)
+            int obstaclesSpawned = 0;
+            int attempts = 0;
+
+            // Generate obstacles randomly across the map
+            while (obstaclesSpawned < totalObstacles && attempts < totalObstacles * maxAttemptsPerObstacle)
             {
-                if (x > lastSpawnedTile.x)
+                attempts++;
+
+                // Generate random position within map bounds
+                Vector2 randomPos = new Vector2(
+                    Random.Range(mapXMin, mapXMax),
+                    Random.Range(mapYMin, mapYMax)
+                );
+
+                // Check if position is valid (far enough from other obstacles)
+                if (IsPositionValid(randomPos))
                 {
-                    TrySpawnObstaclesInTile(x);
+                    SpawnObstacle(randomPos);
+                    spawnedObstaclePositions.Add(randomPos);
+                    obstaclesSpawned++;
                 }
             }
 
-            lastSpawnedTile = currentTile;
-
-            // Clean up obstacles that are too far behind
-            CleanupDistantObstacles();
-        }
-
-        private void TrySpawnObstaclesInTile(int tileX)
-        {
-            // Check each vertical position in tile
-            for (float y = spawnYMin; y <= spawnYMax; y += tileSize.y)
-            {
-                if (Random.value < spawnChancePerTile)
-                {
-                    Vector2 spawnPos = new Vector2(
-                        tileX * tileSize.x + Random.Range(-tileSize.x * 0.4f, tileSize.x * 0.4f),
-                        y + Random.Range(-tileSize.y * 0.3f, tileSize.y * 0.3f)
-                    );
-
-                    // Check if position is far enough from other obstacles
-                    if (IsPositionValid(spawnPos))
-                    {
-                        SpawnObstacle(spawnPos);
-                        spawnedObstaclePositions.Add(spawnPos);
-                    }
-                }
-            }
+            Debug.Log($"Generated {spawnedObstacles.Count} obstacles on map (attempts: {attempts})");
         }
 
         private bool IsPositionValid(Vector2 position)
@@ -111,37 +114,29 @@ namespace DustOfWar.Gameplay
 
             if (obstaclePrefab != null)
             {
-                Instantiate(obstaclePrefab, position, Quaternion.identity, transform);
+                GameObject obstacle = Instantiate(obstaclePrefab, position, Quaternion.identity, transform);
+                spawnedObstacles.Add(obstacle);
             }
         }
 
-        private void CleanupDistantObstacles()
+        /// <summary>
+        /// Regenerate all obstacles
+        /// </summary>
+        public void RegenerateObstacles()
         {
-            if (followTarget == null) return;
-
-            List<GameObject> obstaclesToDestroy = new List<GameObject>();
-            
-            foreach (Transform child in transform)
+            // Clear existing obstacles
+            foreach (var obstacle in spawnedObstacles)
             {
-                if (Vector2.Distance(child.position, followTarget.position) > cleanupDistance)
+                if (obstacle != null)
                 {
-                    obstaclesToDestroy.Add(child.gameObject);
-                    spawnedObstaclePositions.Remove(child.position);
+                    DestroyImmediate(obstacle);
                 }
             }
+            spawnedObstacles.Clear();
+            spawnedObstaclePositions.Clear();
 
-            foreach (var obstacle in obstaclesToDestroy)
-            {
-                Destroy(obstacle);
-            }
-        }
-
-        private Vector2Int WorldToTile(Vector2 worldPos)
-        {
-            return new Vector2Int(
-                Mathf.FloorToInt(worldPos.x / tileSize.x),
-                Mathf.FloorToInt(worldPos.y / tileSize.y)
-            );
+            // Regenerate
+            GenerateObstacles();
         }
     }
 }

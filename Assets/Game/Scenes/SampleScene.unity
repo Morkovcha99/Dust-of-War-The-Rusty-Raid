@@ -318,6 +318,63 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &348567332
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 348567334}
+  - component: {fileID: 348567333}
+  m_Layer: 0
+  m_Name: ObstacleSpawner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &348567333
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 348567332}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bdba5fdbbe06b814ca3937bdb53bf115, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DustOfWar.Gameplay.ObstacleSpawner
+  explosiveBarrelPrefab: {fileID: 8497932257336136917, guid: 4994244090999516e88b4e713aa3f098, type: 3}
+  rockPrefab: {fileID: 3980614184681711106, guid: b5ccdaecc537143eea33944b41528820, type: 3}
+  spawnChancePerTile: 0.02
+  barrelChance: 0.3
+  rockChance: 0.7
+  minDistanceBetweenObstacles: 3
+  tileSize: {x: 1, y: 1}
+  tileGenerator: {fileID: 556083162}
+  tilesHorizontal: 100
+  tilesVertical: 100
+  mapStartPosition: {x: -100, y: -100}
+  spawnYMin: -4
+  spawnYMax: 4
+--- !u!4 &348567334
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 348567332}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 3.72609, y: 3.51262, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
@@ -590,6 +647,60 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &556083161
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 556083163}
+  - component: {fileID: 556083162}
+  m_Layer: 0
+  m_Name: TileGenerator
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &556083162
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 556083161}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 459c3ba3be8ae7703ba1167ad7392ec0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DustOfWar.Gameplay.TileGenerator
+  tilePrefab: {fileID: 2136647215631642824, guid: fd21842899742eaf2abac0b18bfc4755, type: 3}
+  tileSize: {x: 2, y: 2}
+  autoDetectTileSize: 0
+  spritePivotIsCenter: 1
+  tilesHorizontal: 100
+  tilesVertical: 100
+  mapStartPosition: {x: -100, y: -100}
+  randomizeTileRotation: 0
+  randomizeTileScale: 0
+  scaleVariation: 1
+--- !u!4 &556083163
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 556083161}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 3.72609, y: 3.51262, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &619394800
 GameObject:
   m_ObjectHideFlags: 0
@@ -771,20 +882,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4e657af8689bcfdb28555a0c94fb68a5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DustOfWar.Player.PlayerController
-  moveSpeed: 5
-  acceleration: 10
-  deceleration: 10
+  moveSpeed: 50
+  acceleration: 20
+  deceleration: 5
   rotationSpeed: 180
   spriteRotationOffset: -90
-  horizontalBoundaryLeft: -15
-  horizontalBoundaryRight: 15
-  verticalBoundaryTop: 5
-  verticalBoundaryBottom: -5
+  horizontalBoundaryLeft: -90
+  horizontalBoundaryRight: 90
+  verticalBoundaryTop: 90
+  verticalBoundaryBottom: -90
   preferVirtualJoystick: 0
   enableMouseInput: 1
   enableTouchInput: 1
-  inputDeadZone: 0.1
-  maxInputDistance: 10
+  inputDeadZone: 0.05
+  maxInputDistance: 20
 --- !u!50 &900407868
 Rigidbody2D:
   serializedVersion: 5
@@ -1101,15 +1212,15 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 5779036021264795948, guid: f4fae2caf0d991489923d0d2382d00ae, type: 3}
+  m_Sprite: {fileID: -2079549433594689668, guid: 5211d6d9e1a6ee94e9f346996d0ae7e9, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
-  m_Size: {x: 9.9, y: 5.45}
+  m_Size: {x: 9.88, y: 5.48}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
-  m_WasSpriteAssigned: 0
+  m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
 --- !u!1 &1408801173
@@ -1547,3 +1658,5 @@ SceneRoots:
   - {fileID: 1612924651}
   - {fileID: 533848402}
   - {fileID: 344360817}
+  - {fileID: 348567334}
+  - {fileID: 556083163}

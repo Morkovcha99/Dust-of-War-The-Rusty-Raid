@@ -4,139 +4,176 @@ using System.Collections.Generic;
 namespace DustOfWar.Gameplay
 {
     /// <summary>
-    /// Generates infinite ground tiles (sand) for horizontal scrolling game
+    /// Generates a large static map with sand tiles for horizontal game
+    /// Generates entire map at start, not dynamically
     /// </summary>
     public class TileGenerator : MonoBehaviour
     {
         [Header("Tile Settings")]
         [SerializeField] private GameObject tilePrefab;
-        [SerializeField] private Vector2 tileSize = new Vector2(2f, 2f);
-        [SerializeField] private int tilesAhead = 10;
-        [SerializeField] private int tilesBehind = 5;
-        [SerializeField] private int tilesVertical = 5;
+        [SerializeField] private Vector2 tileSize = new Vector2(1f, 1f); // Size of one tile (should match sprite size)
+        [SerializeField] private bool autoDetectTileSize = true; // Automatically detect tile size from sprite
+        [SerializeField] private bool spritePivotIsCenter = true; // If true, sprite pivot is at center; if false, at bottom-left
         
-        [Header("Generation Settings")]
-        [SerializeField] private Transform followTarget; // Player
-        [SerializeField] private float updateDistance = 2f; // Regenerate when player moves this far
+        [Header("Map Size")]
+        [SerializeField] private int tilesHorizontal = 100; // Total tiles horizontally
+        [SerializeField] private int tilesVertical = 10; // Total tiles vertically
+        [SerializeField] private Vector2 mapStartPosition = Vector2.zero; // Starting position of map (bottom-left corner)
         
-        private Dictionary<Vector2Int, GameObject> activeTiles = new Dictionary<Vector2Int, GameObject>();
-        private Vector2Int lastTilePosition;
-        private Vector2 lastUpdatePosition;
+        [Header("Randomization")]
+        [SerializeField] private bool randomizeTileRotation = false;
+        [SerializeField] private bool randomizeTileScale = false;
+        [SerializeField] private float scaleVariation = 0.1f; // ±10% scale variation
+
+        private List<GameObject> generatedTiles = new List<GameObject>();
+        private Vector2 actualTileSize;
 
         private void Start()
         {
-            if (followTarget == null)
+            // Detect tile size if enabled
+            if (autoDetectTileSize && tilePrefab != null)
             {
-                GameObject player = GameObject.FindGameObjectWithTag("Player");
-                if (player != null)
-                {
-                    followTarget = player.transform;
-                }
+                DetectTileSize();
             }
-            
-            lastUpdatePosition = followTarget != null ? (Vector2)followTarget.position : Vector2.zero;
-            GenerateInitialTiles();
+            else
+            {
+                actualTileSize = tileSize;
+            }
+
+            GenerateMap();
         }
 
-        private void Update()
+        private void DetectTileSize()
         {
-            if (followTarget == null) return;
-
-            Vector2 currentPosition = followTarget.position;
-            float distanceMoved = Vector2.Distance(currentPosition, lastUpdatePosition);
-
-            if (distanceMoved >= updateDistance)
+            SpriteRenderer spriteRenderer = tilePrefab.GetComponent<SpriteRenderer>();
+            if (spriteRenderer != null && spriteRenderer.sprite != null)
             {
-                UpdateTiles();
-                lastUpdatePosition = currentPosition;
+                // Get sprite size in world units
+                actualTileSize = spriteRenderer.sprite.bounds.size;
+                Debug.Log($"Auto-detected tile size: {actualTileSize}");
+            }
+            else
+            {
+                // Fallback to configured size
+                actualTileSize = tileSize;
+                Debug.LogWarning("Could not auto-detect tile size, using configured size");
             }
         }
 
-        private void GenerateInitialTiles()
+        private void GenerateMap()
         {
-            Vector2Int centerTile = WorldToTile(followTarget != null ? (Vector2)followTarget.position : Vector2.zero);
-            
-            for (int x = -tilesBehind; x <= tilesAhead; x++)
+            if (tilePrefab == null)
             {
-                for (int y = -tilesVertical / 2; y <= tilesVertical / 2; y++)
-                {
-                    Vector2Int tilePos = centerTile + new Vector2Int(x, y);
-                    CreateTile(tilePos);
-                }
+                Debug.LogWarning("Tile Prefab is not assigned in TileGenerator!");
+                return;
             }
-            
-            lastTilePosition = centerTile;
-        }
 
-        private void UpdateTiles()
-        {
-            Vector2Int currentTile = WorldToTile(followTarget.position);
-            
-            if (currentTile == lastTilePosition) return;
+            // Clear existing tiles if regenerating
+            ClearMap();
 
-            // Remove tiles that are too far behind
-            List<Vector2Int> tilesToRemove = new List<Vector2Int>();
-            foreach (var tilePos in activeTiles.Keys)
+            // Generate tiles
+            for (int x = 0; x < tilesHorizontal; x++)
             {
-                if (tilePos.x < currentTile.x - tilesBehind)
+                for (int y = 0; y < tilesVertical; y++)
                 {
-                    tilesToRemove.Add(tilePos);
+                    CreateTile(x, y);
                 }
             }
 
-            foreach (var tilePos in tilesToRemove)
+            Debug.Log($"Generated {generatedTiles.Count} tiles for map (Tile size: {actualTileSize})");
+        }
+
+        private void CreateTile(int x, int y)
+        {
+            Vector2 worldPos;
+            
+            if (spritePivotIsCenter)
             {
-                DestroyTile(tilePos);
+                // If pivot is at center, offset by half tile size
+                worldPos = new Vector2(
+                    mapStartPosition.x + x * actualTileSize.x + actualTileSize.x * 0.5f,
+                    mapStartPosition.y + y * actualTileSize.y + actualTileSize.y * 0.5f
+                );
+            }
+            else
+            {
+                // If pivot is at bottom-left, place directly
+                worldPos = new Vector2(
+                    mapStartPosition.x + x * actualTileSize.x,
+                    mapStartPosition.y + y * actualTileSize.y
+                );
             }
 
-            // Generate new tiles ahead
-            for (int x = lastTilePosition.x + 1; x <= currentTile.x + tilesAhead; x++)
+            GameObject tile = Instantiate(tilePrefab, worldPos, Quaternion.identity, transform);
+            
+            // Randomize rotation if enabled
+            if (randomizeTileRotation)
             {
-                for (int y = -tilesVertical / 2; y <= tilesVertical / 2; y++)
+                float randomRotation = Random.Range(0f, 360f);
+                tile.transform.rotation = Quaternion.Euler(0, 0, randomRotation);
+            }
+
+            // Randomize scale if enabled
+            if (randomizeTileScale)
+            {
+                float scale = 1f + Random.Range(-scaleVariation, scaleVariation);
+                tile.transform.localScale = Vector3.one * scale;
+            }
+
+            generatedTiles.Add(tile);
+        }
+
+        private void ClearMap()
+        {
+            foreach (var tile in generatedTiles)
+            {
+                if (tile != null)
                 {
-                    Vector2Int tilePos = new Vector2Int(x, y);
-                    if (!activeTiles.ContainsKey(tilePos))
+                    if (Application.isPlaying)
                     {
-                        CreateTile(tilePos);
+                        Destroy(tile);
+                    }
+                    else
+                    {
+                        DestroyImmediate(tile);
                     }
                 }
             }
-
-            lastTilePosition = currentTile;
+            generatedTiles.Clear();
         }
 
-        private void CreateTile(Vector2Int tilePos)
+        /// <summary>
+        /// Regenerate the entire map
+        /// </summary>
+        public void RegenerateMap()
         {
-            if (tilePrefab == null) return;
-
-            Vector2 worldPos = TileToWorld(tilePos);
-            GameObject tile = Instantiate(tilePrefab, worldPos, Quaternion.identity, transform);
-            activeTiles[tilePos] = tile;
+            GenerateMap();
         }
 
-        private void DestroyTile(Vector2Int tilePos)
+        /// <summary>
+        /// Get map bounds
+        /// </summary>
+        public Bounds GetMapBounds()
         {
-            if (activeTiles.TryGetValue(tilePos, out GameObject tile))
-            {
-                Destroy(tile);
-                activeTiles.Remove(tilePos);
-            }
-        }
-
-        private Vector2Int WorldToTile(Vector2 worldPos)
-        {
-            return new Vector2Int(
-                Mathf.FloorToInt(worldPos.x / tileSize.x),
-                Mathf.FloorToInt(worldPos.y / tileSize.y)
+            Vector2 mapSize = new Vector2(
+                tilesHorizontal * actualTileSize.x,
+                tilesVertical * actualTileSize.y
             );
+            
+            Vector2 mapCenter = new Vector2(
+                mapStartPosition.x + mapSize.x * 0.5f,
+                mapStartPosition.y + mapSize.y * 0.5f
+            );
+
+            return new Bounds(mapCenter, mapSize);
         }
 
-        private Vector2 TileToWorld(Vector2Int tilePos)
+        /// <summary>
+        /// Get actual tile size being used
+        /// </summary>
+        public Vector2 GetTileSize()
         {
-            return new Vector2(
-                tilePos.x * tileSize.x + tileSize.x * 0.5f,
-                tilePos.y * tileSize.y + tileSize.y * 0.5f
-            );
+            return actualTileSize;
         }
     }
 }
