@@ -4,19 +4,16 @@ public class PlayerData : MonoBehaviour
 {
     public static PlayerData Instance { get; private set; }
 
-    public int rustyBolts = 500;
-    public int fuelCans = 50;
-
-    // «десь будут хранитьс€ данные дл€ всех разблокированных и прокачанных машин игрока
-    // ¬ упрощенном виде, мы будем использовать CurrentCarState дл€ отображени€,
-    // но в реальной игре, эти данные нужно будет сохран€ть и загружать.
+    public int rustyBolts = 0;
+    public int fuelCans = 0;
 
     void Awake()
     {
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject); // —охран€ем между сценами
+            DontDestroyOnLoad(gameObject);
+            LoadFromSaveSystem();
         }
         else
         {
@@ -24,14 +21,42 @@ public class PlayerData : MonoBehaviour
         }
     }
 
+    private void OnEnable()
+    {
+        // Sync with SaveSystem when enabled (e.g., when returning to menu)
+        LoadFromSaveSystem();
+    }
+
+    /// <summary>
+    /// Load bolts and fuel from SaveSystem
+    /// </summary>
+    public void LoadFromSaveSystem()
+    {
+        if (DustOfWar.Gameplay.SaveSystem.Instance != null)
+        {
+            rustyBolts = DustOfWar.Gameplay.SaveSystem.Instance.LoadRustyBolts();
+            fuelCans = DustOfWar.Gameplay.SaveSystem.Instance.LoadFuelCanisters();
+        }
+    }
+
     public void AddRustyBolts(int amount)
     {
         rustyBolts += amount;
+        // Save to SaveSystem immediately
+        if (DustOfWar.Gameplay.SaveSystem.Instance != null)
+        {
+            DustOfWar.Gameplay.SaveSystem.Instance.SaveRustyBolts(rustyBolts);
+        }
     }
 
     public void AddFuelCans(int amount)
     {
         fuelCans += amount;
+        // Save to SaveSystem immediately
+        if (DustOfWar.Gameplay.SaveSystem.Instance != null)
+        {
+            DustOfWar.Gameplay.SaveSystem.Instance.SaveFuelCanisters(fuelCans);
+        }
     }
 
     public bool HasEnoughRustyBolts(int amount)
@@ -49,6 +74,11 @@ public class PlayerData : MonoBehaviour
         if (HasEnoughRustyBolts(amount))
         {
             rustyBolts -= amount;
+            // Save to SaveSystem immediately
+            if (DustOfWar.Gameplay.SaveSystem.Instance != null)
+            {
+                DustOfWar.Gameplay.SaveSystem.Instance.SaveRustyBolts(rustyBolts);
+            }
         }
     }
 
@@ -57,6 +87,11 @@ public class PlayerData : MonoBehaviour
         if (HasEnoughFuelCans(amount))
         {
             fuelCans -= amount;
+            // Save to SaveSystem immediately
+            if (DustOfWar.Gameplay.SaveSystem.Instance != null)
+            {
+                DustOfWar.Gameplay.SaveSystem.Instance.SaveFuelCanisters(fuelCans);
+            }
         }
     }
 }

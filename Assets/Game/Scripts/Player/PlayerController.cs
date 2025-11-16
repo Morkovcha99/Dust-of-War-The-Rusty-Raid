@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using DustOfWar.Gameplay;
 
 namespace DustOfWar.Player
 {
@@ -32,6 +33,15 @@ namespace DustOfWar.Player
         [SerializeField] private float inputDeadZone = 0.1f; // Minimum distance to start moving
         [SerializeField] private float maxInputDistance = 10f; // Max distance for full speed
 
+        [Header("Audio Settings")]
+        [SerializeField] private AudioClip engineSound;
+        [SerializeField] private float engineSoundVolume = 0.3f;
+        [SerializeField] private float enginePitchMin = 0.8f;
+        [SerializeField] private float enginePitchMax = 1.2f;
+        [SerializeField] private AudioClip collisionSound;
+        [SerializeField] private float collisionSoundVolume = 0.5f;
+        [SerializeField] private float collisionSoundCooldown = 0.2f; // Prevent sound spam
+
         private Rigidbody2D rb;
         private DustOfWar.UI.VirtualJoystick virtualJoystick;
         
@@ -42,6 +52,9 @@ namespace DustOfWar.Player
         private bool isMovementEnabled = true;
         private bool isUsingTouch = false;
         private Camera mainCamera;
+        private AudioSource engineAudioSource;
+        private bool isMoving = false;
+        private float lastCollisionSoundTime = 0f;
 
         // Events
         public System.Action<Vector2> OnMovementDirectionChanged;
@@ -58,6 +71,16 @@ namespace DustOfWar.Player
             if (mainCamera == null)
             {
                 mainCamera = FindFirstObjectByType<Camera>();
+            }
+
+            // Get or create AudioSource for engine
+            engineAudioSource = GetComponent<AudioSource>();
+            if (engineAudioSource == null)
+            {
+                engineAudioSource = gameObject.AddComponent<AudioSource>();
+                engineAudioSource.playOnAwake = false;
+                engineAudioSource.loop = true;
+                engineAudioSource.spatialBlend = 0f; // 2D sound
             }
         }
 
@@ -101,6 +124,7 @@ namespace DustOfWar.Player
             ApplyMovement();
             ApplyBoundaries();
             UpdateRotation();
+            UpdateEngineSound();
         }
 
         private void ProcessInput()
@@ -312,6 +336,56 @@ namespace DustOfWar.Player
         public void SetPreferVirtualJoystick(bool prefer)
         {
             preferVirtualJoystick = prefer;
+        }
+
+        private void UpdateEngineSound()
+        {
+            bool wasMoving = isMoving;
+            isMoving = inputDirection.magnitude > 0.01f;
+
+            if (engineSound != null && engineAudioSource != null)
+            {
+                if (isMoving && !wasMoving)
+                {
+                    // Start engine sound
+                    engineAudioSource.clip = engineSound;
+                    engineAudioSource.volume = engineSoundVolume;
+                    engineAudioSource.Play();
+                }
+                else if (!isMoving && wasMoving)
+                {
+                    // Stop engine sound
+                    engineAudioSource.Stop();
+                }
+
+                // Adjust pitch based on speed
+                if (isMoving && engineAudioSource.isPlaying)
+                {
+                    float speedRatio = currentVelocity.magnitude / moveSpeed;
+                    float pitch = Mathf.Lerp(enginePitchMin, enginePitchMax, speedRatio);
+                    engineAudioSource.pitch = pitch;
+                }
+            }
+        }
+
+        private void OnCollisionEnter2D(Collision2D collision)
+        {
+            // Play collision sound when hitting enemies or obstacles
+            if (collisionSound != null && engineAudioSource != null)
+            {
+                // Check cooldown to prevent sound spam
+                if (Time.time - lastCollisionSoundTime >= collisionSoundCooldown)
+                {
+                    // Only play sound if hitting something significant (enemy, obstacle, etc.)
+                    if (collision.gameObject.CompareTag("Enemy") || 
+                        collision.gameObject.GetComponent<DustOfWar.Gameplay.Rock>() != null ||
+                        collision.gameObject.GetComponent<DustOfWar.Gameplay.ExplosiveBarrel>() != null)
+                    {
+                        engineAudioSource.PlayOneShot(collisionSound, collisionSoundVolume);
+                        lastCollisionSoundTime = Time.time;
+                    }
+                }
+            }
         }
 
         private void OnDrawGizmosSelected()

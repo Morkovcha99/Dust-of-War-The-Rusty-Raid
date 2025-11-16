@@ -60,11 +60,94 @@ namespace DustOfWar.Gameplay
             float mapYMin = Mathf.Max(mapStartPosition.y, spawnYMin);
             float mapYMax = Mathf.Min(mapStartPosition.y + mapHeight, spawnYMax);
 
+            // Validate map bounds
+            if (mapWidth <= 0 || mapHeight <= 0)
+            {
+                Debug.LogError("ObstacleSpawner: Invalid map bounds! Cannot generate obstacles.");
+                return;
+            }
+
             int obstaclesSpawned = 0;
             int attempts = 0;
+            int maxTotalAttempts = totalObstacles * maxAttemptsPerObstacle * 3;
 
-            // Generate obstacles randomly across the map
-            while (obstaclesSpawned < totalObstacles && attempts < totalObstacles * maxAttemptsPerObstacle)
+            // Calculate grid dimensions for even distribution
+            int gridCols = Mathf.Max(1, Mathf.CeilToInt(Mathf.Sqrt(totalObstacles * (mapWidth / Mathf.Max(mapHeight, 0.1f)))));
+            int gridRows = Mathf.Max(1, Mathf.CeilToInt(Mathf.Sqrt(totalObstacles * (mapHeight / Mathf.Max(mapWidth, 0.1f)))));
+            
+            // Ensure we have enough grid cells
+            while (gridCols * gridRows < totalObstacles && (gridCols * gridRows) < 1000)
+            {
+                if (mapWidth > mapHeight)
+                    gridCols++;
+                else
+                    gridRows++;
+            }
+
+            float cellWidth = mapWidth / Mathf.Max(1, gridCols);
+            float cellHeight = mapHeight / Mathf.Max(1, gridRows);
+
+            // Create list of grid cell indices
+            List<int> gridCellIndices = new List<int>();
+            for (int i = 0; i < gridCols * gridRows; i++)
+            {
+                gridCellIndices.Add(i);
+            }
+
+            // Shuffle grid cell indices for randomness
+            for (int i = 0; i < gridCellIndices.Count; i++)
+            {
+                int temp = gridCellIndices[i];
+                int randomIndex = Random.Range(i, gridCellIndices.Count);
+                gridCellIndices[i] = gridCellIndices[randomIndex];
+                gridCellIndices[randomIndex] = temp;
+            }
+
+            // Spawn obstacles in grid cells
+            for (int cellIndex = 0; cellIndex < gridCellIndices.Count && obstaclesSpawned < totalObstacles; cellIndex++)
+            {
+                int cellIdx = gridCellIndices[cellIndex];
+                int cellX = cellIdx % gridCols;
+                int cellY = cellIdx / gridCols;
+
+                // Calculate cell bounds
+                float cellXMin = mapXMin + cellX * cellWidth;
+                float cellXMax = mapXMin + (cellX + 1) * cellWidth;
+                float cellYMin = mapYMin + cellY * cellHeight;
+                float cellYMax = mapYMin + (cellY + 1) * cellHeight;
+
+                // Try to spawn obstacle in this cell
+                bool spawnedInCell = false;
+                for (int attempt = 0; attempt < maxAttemptsPerObstacle && !spawnedInCell; attempt++)
+                {
+                    attempts++;
+                    if (attempts > maxTotalAttempts) break;
+
+                    // Generate random position within cell (with some margin from edges)
+                    float marginX = Mathf.Max(0.1f, cellWidth * 0.1f);
+                    float marginY = Mathf.Max(0.1f, cellHeight * 0.1f);
+                    Vector2 randomPos = new Vector2(
+                        Random.Range(cellXMin + marginX, cellXMax - marginX),
+                        Random.Range(cellYMin + marginY, cellYMax - marginY)
+                    );
+
+                    // Clamp to map bounds
+                    randomPos.x = Mathf.Clamp(randomPos.x, mapXMin, mapXMax);
+                    randomPos.y = Mathf.Clamp(randomPos.y, mapYMin, mapYMax);
+
+                    // Check if position is valid (far enough from other obstacles)
+                    if (IsPositionValid(randomPos))
+                    {
+                        SpawnObstacle(randomPos);
+                        spawnedObstaclePositions.Add(randomPos);
+                        obstaclesSpawned++;
+                        spawnedInCell = true;
+                    }
+                }
+            }
+
+            // If we haven't spawned enough obstacles, fill remaining with random positions
+            while (obstaclesSpawned < totalObstacles && attempts < maxTotalAttempts)
             {
                 attempts++;
 
@@ -83,7 +166,7 @@ namespace DustOfWar.Gameplay
                 }
             }
 
-            Debug.Log($"Generated {spawnedObstacles.Count} obstacles on map (attempts: {attempts})");
+            Debug.Log($"Generated {spawnedObstacles.Count} obstacles on map (attempts: {attempts}, grid: {gridCols}x{gridRows})");
         }
 
         private bool IsPositionValid(Vector2 position)

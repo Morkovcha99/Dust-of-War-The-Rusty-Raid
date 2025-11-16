@@ -67,7 +67,13 @@ namespace DustOfWar.Player
         /// </summary>
         public void TakeDamage(float damage)
         {
-            if (isInvulnerable) return;
+            if (isInvulnerable)
+            {
+                Debug.Log("Player is invulnerable, ignoring damage");
+                return;
+            }
+
+            Debug.Log($"Player taking {damage} damage");
 
             // Apply armor reduction
             float totalArmor = armor + armorBonus;

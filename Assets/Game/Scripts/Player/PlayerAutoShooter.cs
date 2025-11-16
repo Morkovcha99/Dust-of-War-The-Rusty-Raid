@@ -31,8 +31,13 @@ namespace DustOfWar.Player
         [SerializeField] private Color targetIndicatorColor = Color.red;
         [SerializeField] private float indicatorSize = 0.5f;
 
+        [Header("Audio Settings")]
+        [SerializeField] private AudioClip shootSound;
+        [SerializeField] private float shootSoundVolume = 0.5f;
+
         private PlayerController playerController;
         private PlayerVehicle playerVehicle;
+        private AudioSource audioSource;
         private float lastFireTime = 0f;
         private Transform currentTarget = null;
         private List<Transform> enemiesInRange = new List<Transform>();
@@ -68,6 +73,15 @@ namespace DustOfWar.Player
                 // Fallback: use tag-based detection
                 enemyLayer = ~0; // All layers
                 Debug.LogWarning("PlayerAutoShooter: Enemy layer not found, using all layers with tag detection");
+            }
+
+            // Get or create AudioSource
+            audioSource = GetComponent<AudioSource>();
+            if (audioSource == null)
+            {
+                audioSource = gameObject.AddComponent<AudioSource>();
+                audioSource.playOnAwake = false;
+                audioSource.spatialBlend = 0f; // 2D sound
             }
         }
 
@@ -193,6 +207,12 @@ namespace DustOfWar.Player
                 FireProjectile(firePoint.position, finalDirection);
             }
 
+            // Play shoot sound
+            if (shootSound != null && audioSource != null)
+            {
+                audioSource.PlayOneShot(shootSound, shootSoundVolume);
+            }
+
             OnWeaponFired?.Invoke();
         }
 
@@ -211,7 +231,7 @@ namespace DustOfWar.Player
             {
                 float damageMultiplier = playerVehicle != null ? playerVehicle.GetDamageMultiplier() : 1f;
                 float finalDamage = projectileDamage * damageMultiplier;
-                projectile.Initialize(direction * projectileSpeed, finalDamage, projectileLifetime);
+                projectile.Initialize(direction * projectileSpeed, finalDamage, projectileLifetime, gameObject);
             }
             else
             {

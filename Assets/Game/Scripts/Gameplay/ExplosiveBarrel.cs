@@ -23,8 +23,9 @@ namespace DustOfWar.Gameplay
 
         private void OnTriggerEnter2D(Collider2D other)
         {
-            // Explode on projectile hit
-            if (other.CompareTag("Projectile") || other.GetComponent<DustOfWar.Combat.Projectile>() != null)
+            // Explode on projectile hit (check component, not tag)
+            DustOfWar.Combat.Projectile projectile = other.GetComponent<DustOfWar.Combat.Projectile>();
+            if (projectile != null)
             {
                 TakeDamage(health); // Instant explode
             }

@@ -199,7 +199,7 @@ namespace DustOfWar.Enemies
                 DustOfWar.Combat.Projectile projectile = projectileObj.GetComponent<DustOfWar.Combat.Projectile>();
                 if (projectile != null)
                 {
-                    projectile.Initialize(directionToPlayer * projectileSpeed, projectileDamage, 5f);
+                    projectile.Initialize(directionToPlayer * projectileSpeed, projectileDamage, 5f, gameObject);
                 }
                 else
                 {
